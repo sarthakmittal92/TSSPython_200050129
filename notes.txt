@@ -5,3 +5,6 @@ WEEK 1
 Notes: https://github.com/wncc/TSS-2021/tree/main/Python%20%26%20its%20Applications/Week-1
 Assignment: https://github.com/Karrthik-Arya/TSS-2021/blob/main/Python%20%26%20its%20Applications/Week-1/AssignmentForSnippetCompletion.ipynb
 Submission: https://forms.gle/Foh5ozygCbvB2WUu6
+
+WEEK 2
+Notes: https://github.com/Karrthik-Arya/TSS-2021/tree/main/Python%20%26%20its%20Applications/Week-2
