@@ -129,7 +129,7 @@ def VisualizeData(FinalData):
   plt.plot(FinalData)
   plt.show()
 
-Data = GetData("path/to/DATA.csv")
+Data = GetData("/path/to/DATA.csv")
 List = PartitionData(Data)
 PartitionedData = List[0]
 DateToIndex = List[1]
@@ -145,5 +145,7 @@ for i in range((T + 1),len(PartitionedData)):
     myPortfolio.RebalancePortfolio()
   if (i % P == 0):
     myPortfolio.ChangePairs()
-  
+  if i == T + D + 6:
+    break
+
 VisualizeData(NetWorthAfterEachTrade[:D])

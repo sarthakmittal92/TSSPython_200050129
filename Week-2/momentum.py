@@ -100,5 +100,5 @@ for i in range((N + 1),len(PartitionedData)):
     myPortfolio.RebalancePortFolio(GetMomentumBasedPriority(PartitionedData, DateToIndex, today))
   if i == N + D + 6:
     break
-  
+
 VisualizeData(NetWorthAfterEachTrade[:D])
