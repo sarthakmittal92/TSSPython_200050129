@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 N = 50
-T = 7
+T = 60
+P = 7
 R = 0.8
-M = 5
+M = 4
 F = 0.005
 D = 500
 B = 10000
@@ -52,11 +53,21 @@ def GetBalanced(prices, weights, balance):
   sum = np.sum(weights * prices)
   return (balance / sum) * weights
 
+def Switch(firstStock, secondStock, today ,PartitionedDataFrames):
+  weights = GetMomentumBasedPriority(PartitionedDataFrames, DateToIndex, today)
+  if weights[firstStock] >= weights[secondStock]:
+    return firstStock
+  else:
+    return secondStock
+  
 class PortFolio:
-  def __init__(self, balance, numStocks, prices):
+  def __init__(self, balance, numStocks, negCorr, prices):
     self.balance = balance
     self.numStocks = numStocks
+    self.numStocks += GetBalanced(prices,GetMomentumBasedPriority(PartitionedData,DateToIndex,list(DateToIndex.keys())[T]),self.balance)
     self.prices = prices
+    self.balance -= np.sum(self.numStocks * self.prices) * (1 + F)
+    self.negCorr = negCorr
 
   def SellStock(self, index):
     self.balance += self.numStocks[index] * self.prices[index] * (1 - F)
@@ -71,15 +82,49 @@ class PortFolio:
   def ChangePricesTo(self, newPriceVector):
     self.prices = newPriceVector
 
-  def RebalancePortFolio(self, newWeights):
-    balanceCopy = self.balance + np.sum(self.numStocks * self.prices) * (1 - F)
-    newStocks = GetBalanced(self.prices, newWeights, balanceCopy)
-    for i in range(30):
-      balanceCopy -= self.prices[i] * newStocks[i] * (1 + F)
-    if balanceCopy + np.sum(self.prices * newStocks) * (1 - F) + B * (1 - R) >= self.CalculateNetWorth():
-      self.balance = balanceCopy
-      self.numStocks = newStocks
-
+  def ChangePairs(self):
+    if self.negCorr == []:
+      return
+    for i in range(len(self.negCorr) - 1):
+      x = Switch(self.negCorr[i][0],self.negCorr[i][1],today,PartitionedData)
+      y = self.negCorr[i][0] + self.negCorr[i][1] - x
+      credit = self.numStocks[y] * self.prices[y] * (1 - F)
+      self.numStocks[y] = 0
+      self.numStocks[x] += credit / (self.prices[x] * (1 + F))
+  
+  def RebalancePortfolio(self):
+    TdaysAgo = datetime.date(int(today[0:4]),int(today[4:6]),int(today[6:])) + datetime.timedelta(days = -T)
+    i = 0
+    while i >= 0:
+      x = str(TdaysAgo - datetime.timedelta(days = i)).replace('-','')
+      if (x in DateToIndex.keys()):
+        break
+      i += 1
+    temp = x
+    Sum = [np.array(PartitionedData[DateToIndex[today] % 2926]['adjcp'])]
+    for i in range((DateToIndex[temp] + 1), (DateToIndex[today]),30):
+      Sum.append(np.array(PartitionedData[i % 2926]['adjcp']))
+    corrCoef = np.corrcoef(np.array(Sum))
+    copy = np.sort(corrCoef.flatten())
+    for k in range(M):
+      for i in range(corrCoef.shape[0]):
+        for j in range(30):
+          if abs(corrCoef[i][j] - copy[k]) < 1e-10:
+            self.negCorr.append((i,j))
+    self.negCorr = self.negCorr[0:M]
+    copy = self.negCorr.copy()
+    if self.negCorr == []:
+      return
+    for i in range(len(self.negCorr) - 1):
+      for j in range(i + 1, len(self.negCorr)):
+        x = list(self.negCorr[i])
+        y = list(self.negCorr[j])
+        if x[0] == y[0] or x[0] == y[1] or x[1] == y[0] or x[1] == y[1]:
+          if self.negCorr[j] in copy and copy.count(self.negCorr[j]) > 1:
+            copy.remove(self.negCorr[j])
+    self.negCorr = copy.copy()
+    self.ChangePairs()
+    
 def VisualizeData(FinalData):
   plt.plot(FinalData)
   plt.show()
@@ -89,16 +134,18 @@ List = PartitionData(Data)
 PartitionedData = List[0]
 DateToIndex = List[1]
 
-myPortfolio = PortFolio(B * R,np.zeros(30, dtype = float),np.array(PartitionedData[int(list(DateToIndex.keys())[N]) % 2926]['adjcp']))
+myPortfolio = PortFolio(B * R,np.zeros(30, dtype = float),[],np.array(PartitionedData[int(list(DateToIndex.keys())[T]) % 2926]['adjcp']))
 NetWorthAfterEachTrade = [myPortfolio.CalculateNetWorth() + B * (1 - R)]
 
-for i in range((N + 1),len(PartitionedData)):
+for i in range((T + 1),len(PartitionedData)):
   today = list(DateToIndex.keys())[i]
   myPortfolio.ChangePricesTo(np.array(PartitionedData[int(today) % 2926]['adjcp']))
   NetWorthAfterEachTrade.append(myPortfolio.CalculateNetWorth() + B * (1 - R))
   if (i % T == 0):
-    myPortfolio.RebalancePortFolio(GetMomentumBasedPriority(PartitionedData, DateToIndex, today))
-  if i == N + D + 6:
+    myPortfolio.RebalancePortfolio()
+  if (i % P == 0):
+    myPortfolio.ChangePairs()
+  if i == T + D + 6:
     break
 
 VisualizeData(NetWorthAfterEachTrade[:D])
