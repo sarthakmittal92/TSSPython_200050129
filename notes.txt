@@ -11,3 +11,6 @@ Notes: https://github.com/Karrthik-Arya/TSS-2021/tree/main/Python%20%26%20its%20
 
 WEEK 3
 Notes: https://github.com/wncc/TSS-2021/tree/main/Python%20%26%20its%20Applications/Week-3
+
+WEEK 4
+Notes: https://github.com/wncc/TSS-2021/tree/main/Python%20%26%20its%20Applications/Week-4
